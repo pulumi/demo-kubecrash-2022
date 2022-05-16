@@ -1,0 +1,61 @@
+configuration:
+  kubeconfig:
+    type: String
+    secret: true
+  serviceNodePort:
+    type: Number
+  serviceType:
+    type: String
+  imageName:
+    default: docker.io/afriel/demo-img:latest
+variables:
+  appLabels: # just a map, must not be mutated
+    app: shiny-demo
+resources:
+  k8sProvider:
+    type: pulumi:providers:kubernetes
+    properties:
+      kubeconfig: ${kubeconfig}
+  shiny:
+    type: kubernetes:core/v1:Namespace
+    options:
+      provider: ${k8sProvider}
+  app:
+    type: kubernetes:apps/v1:Deployment
+    properties:
+      metadata:
+        namespace: ${shiny.metadata.name}
+      spec:
+        selector:
+          matchLabels: ${appLabels}
+        replicas: 1
+        template:
+          metadata:
+            labels: ${appLabels}
+          spec:
+            containers:
+              - name: app
+                image: "${imageName}"
+                ports:
+                - containerPort: 80
+    options:
+      provider: ${k8sProvider}
+  service:
+    type: kubernetes:core/v1:Service
+    properties:
+      metadata:
+        namespace: ${shiny.metadata.name}
+        labels: ${appLabels}
+      spec:
+        type: ${serviceType}
+        ports:
+          - nodePort: ${serviceNodePort}
+            port: 80
+            targetPort: 80
+            protocol: "TCP"
+        selector: ${appLabels}
+    options:
+      provider: ${k8sProvider}
+outputs:
+  serviceStatus: ${service.status}
+  serviceNodePort: ${service.spec.ports[0].nodePort}

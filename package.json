@@ -1,0 +1,23 @@
+{
+    "name": "kc22demo",
+    "type": "commonjs",
+    "devDependencies": {
+        "@swc/core": "^1.2.182",
+        "@tsconfig/node16": "^1.0.2",
+        "@types/gradient-string": "^1.1.2",
+        "@types/node": "^16",
+        "ts-node": "^10.7.0",
+        "typescript": "^4"
+    },
+    "dependencies": {
+        "@pulumi/pulumi": "^3.0.0",
+        "chalk": "^4.0.0",
+        "chalk-animation": "^1.6",
+        "gradient-string": "^2.0.1",
+        "into-stream": "^5.0.0",
+        "js-yaml": "^4.1.0",
+        "lazy-value": "^2.0.0",
+        "moment": "^2.29.1",
+        "p-limit": "^3.1.0"
+    }
+}

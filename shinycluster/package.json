@@ -1,0 +1,11 @@
+{
+    "name": "thurs",
+    "devDependencies": {
+        "@types/node": "^14"
+    },
+    "dependencies": {
+        "@pulumi/civo": "^2.2.2",
+        "@pulumi/linode": "^3.7.1",
+        "@pulumi/pulumi": "^3.0.0"
+    }
+}
