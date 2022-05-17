@@ -19,6 +19,7 @@ export async function runPulumiProject<T extends object>({
     workDir: dir,
   };
   const stack = await LocalWorkspace.createOrSelectStack(localProgramArgs, {});
+
   formatter(`Spinning up stack ${project}/${stackName}`);
   await stack.setAllConfig({
     ...additionalConfig,
@@ -35,12 +36,14 @@ export async function runPulumiProject<T extends object>({
   switch (operation) {
     case 'preview':
       formatter('Previewing');
+
       const previewResult = await stack.preview({ onOutput: formatter });
       operations = previewResult.changeSummary;
       outputs = (await stack.outputs()) as OutputMap<Unwrapped<T>>;
       break;
     case 'up':
       formatter('Deploying');
+
       const upResult = await stack.up({ onOutput: formatter });
       operations = upResult.summary.resourceChanges;
       status = upResult.summary.result;
@@ -48,7 +51,8 @@ export async function runPulumiProject<T extends object>({
       outputs = upResult.outputs as OutputMap<Unwrapped<T>>;
       break;
     case 'destroy':
-      formatter('Deploying');
+      formatter('Destroying');
+
       const destroyResult = await stack.destroy({ onOutput: formatter });
       operations = destroyResult.summary.resourceChanges;
       status = destroyResult.summary.result;

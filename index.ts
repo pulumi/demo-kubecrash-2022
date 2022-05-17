@@ -10,11 +10,6 @@ interface ClusterOutputs {
 async function main() {
   const clusters = [
     { name: 'kind-local', cloud: 'kind', nodePort: 32001 },
-    // { name: 'kind-local-2', cloud: 'kind', nodePort: 32002 },
-    // { name: 'linode-1', cloud: 'linode' },
-    // { name: 'linode-2', cloud: 'linode' },
-    // { name: 'civo-1', cloud: 'civo' },
-    // { name: 'civo-2', cloud: 'civo' },
   ];
 
   await Promise.allSettled(
