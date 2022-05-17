@@ -1,140 +1,85 @@
-import {
-  ConfigMap,
-  LocalProgramArgs,
-  LocalWorkspace,
-  Stack,
-} from '@pulumi/pulumi/automation';
-import chalk from 'chalk';
-import chalkAnimation from 'chalk-animation';
 
-import { outputFormatter } from './outputFormatter';
-import {
-  OutputMap,
-  StackModule,
-  StackOutputMap,
-  Unwrapped,
-} from './stackModule';
-
-const STACK_NAME = process.env.STACK_NAME ?? 'dev';
-const DRY_RUN = process.env.DRY_RUN === 'false' ? false : true;
-
-interface StackUpResult<T> {
-  stack: Stack;
-  projectName: string;
-  outputs: OutputMap<Unwrapped<T>>;
-}
-
-export async function stackUp<T extends object>(
-  dir: string,
-  project: string,
-  stackName: string,
-  dryrun = false,
-  additionalConfig: ConfigMap,
-): Promise<StackUpResult<T>> {
-  const formatter = outputFormatter(`${project}/${stackName}`);
-
-  const localProgramArgs: LocalProgramArgs = {
-    stackName,
-    workDir: dir,
-  };
-  const stack = await LocalWorkspace.createOrSelectStack(localProgramArgs, {});
-  formatter(`Spinning up stack ${project}/${stackName}`);
-  await stack.setAllConfig({
-    ...additionalConfig,
-  });
-
-  formatter('Refreshing');
-  await stack.refresh();
-
-  if (dryrun) {
-    const outputs = (await stack.outputs()) as OutputMap<Unwrapped<T>>;
-    return {
-      stack,
-      projectName: project,
-      outputs,
-    };
-  }
-  formatter('Deploying');
-  const result = await stack.up();
-
-  if (result.summary.result !== 'succeeded') {
-    formatter(result.stdout);
-    formatter(result.stderr);
-    throw new Error(result.summary.message);
-  }
-
-  formatter('Succeeded! Resource summary:');
-  const fmtNum = (num?: number) => `${num}`.padStart(3);
-  const changes = result.summary.resourceChanges;
-  if (changes?.create) {
-    formatter(`${fmtNum(changes?.create)} ${chalk.green('created')}`);
-  }
-  if (changes?.replace) {
-    formatter(`${fmtNum(changes?.replace)} ${chalk.magenta('replaced')}`);
-  }
-  if (changes?.update) {
-    formatter(`${fmtNum(changes?.update)} ${chalk.yellow('updated')}`);
-  }
-  if (changes?.same) {
-    formatter(`${fmtNum(changes?.same)} ${chalk.bold('unchanged')}`);
-  }
-
-  return {
-    stack,
-    projectName: project,
-    outputs: result.outputs as OutputMap<Unwrapped<T>>,
-  };
-}
-
-export async function stackPreview<T>(
-  dir: string,
-  project: string,
-  stackName: string = STACK_NAME,
-  additionalConfig: ConfigMap,
-) {
-  const stack = await LocalWorkspace.createOrSelectStack({
-    stackName,
-    workDir: dir,
-  });
-
-  await stack.getAllConfig();
-  const stackConfig = await stack.setAllConfig(additionalConfig);
-  const formatter = outputFormatter(`${project}/${stackName}`);
-  await stack.preview({ onOutput: formatter });
-
-  return {
-    stack,
-    projectName: project,
-    outputs: (await stack.outputs()) as OutputMap<Unwrapped<T>>,
-  };
-}
+import { chooseColor, outputFormatter } from './outputFormatter';
+import { runPulumiProject } from './runPulumiProject';
 
 interface ClusterOutputs {
-  shinyName: string,
-  shinyConfig: string,
-};
+  shinyName: string;
+  shinyConfig: string;
+}
 
 async function main() {
-  // const sharedProject = await LocalWorkspace.createOrSelectStack({
-  //   stackName: STACK_NAME,
-  //   workDir: ".",
-  // });
 
-  const clusters = await Promise.all([
-    stackUp<ClusterOutputs>('./shinycluster', 'shinycluster', 'kind', false, {
-      "cloud": { value: "kind" },
+  // const clusters = [
+  //   { name: 'kind-local', cloud: 'kind', nodePort: 32001 },
+  //   { name: 'kind-local-2', cloud: 'kind', nodePort: 32002 },
+  //   { name: 'linode-1', cloud: 'linode' },
+  //   { name: 'linode-2', cloud: 'linode' },
+  //   { name: 'civo-1', cloud: 'civo' },
+  //   { name: 'civo-2', cloud: 'civo' },
+  // ];
+  // await Promise.allSettled(
+  //   clusters.map(async (clusterDefinition) => {
+  //     let theme = chooseColor();
+
+  //     const serviceType = clusterDefinition.nodePort ? 'NodePort' : 'LoadBalancer';
+  //     const serviceNodePort = `${clusterDefinition.nodePort ?? 0}`;
+  //     const cluster = await runPulumiProject<ClusterOutputs>({
+  //       dir: './shinycluster',
+  //       project: 'shinycluster',
+  //       stackName: clusterDefinition.name,
+  //       operation: 'up',
+  //       additionalConfig: {
+  //         cloud: { value: clusterDefinition.cloud },
+  //         nodePort: { value: serviceNodePort },
+  //       },
+  //       formatter: outputFormatter(`cluster   ${clusterDefinition.name}`, theme)
+  //     });
+
+  //     runPulumiProject({
+  //       dir: './shinyapp',
+  //       project: 'shinyapp',
+  //       stackName: cluster.stack.name,
+  //       operation: 'up',
+  //       additionalConfig: {
+  //         kubeconfig: cluster.outputs.shinyConfig,
+  //         serviceType: { value: serviceType },
+  //         serviceNodePort: { value: serviceNodePort },
+  //       },
+  //       formatter: outputFormatter(`app       ${clusterDefinition.name}`, theme)
+  //     });
+  //   }),
+  // );
+
+
+  const formerClusters = [
+    { name: 'kind-local', cloud: 'kind', nodePort: 32001 },
+    { name: 'kind-local-2', cloud: 'kind', nodePort: 32002 },
+    { name: 'linode-1', cloud: 'linode' },
+    { name: 'linode-2', cloud: 'linode' },
+    { name: 'civo-1', cloud: 'civo' },
+    { name: 'civo-2', cloud: 'civo' },
+  ];
+
+
+  await Promise.allSettled(
+    formerClusters.map(async (clusterDefinition) => {
+      let theme = chooseColor();
+
+      const serviceType = clusterDefinition.nodePort ? 'NodePort' : 'LoadBalancer';
+      const serviceNodePort = `${clusterDefinition.nodePort ?? 0}`;
+      await runPulumiProject<ClusterOutputs>({
+        dir: './shinycluster',
+        project: 'shinycluster',
+        stackName: clusterDefinition.name,
+        operation: 'destroy',
+        additionalConfig: {
+          cloud: { value: clusterDefinition.cloud },
+          nodePort: { value: serviceNodePort },
+        },
+        formatter: outputFormatter(`cluster   ${clusterDefinition.name}`, theme)
+      });
     }),
-    // stackPreview('./shinycluster', 'kind', 'bravo', {
-    //   "cloud": { value: "kind" },
-    // }),
-  ]);
-
-  for (const cluster of clusters) {
-    stackUp("./shinyapp", 'shinyapp', cluster.stack.name, false, {
-      "kubeconfig": cluster.outputs.shinyConfig,
-      "serviceType": { value: "NodePort" },
-    })
-  }
+  );
 }
 
 main();

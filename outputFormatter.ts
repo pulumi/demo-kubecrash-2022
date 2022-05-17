@@ -4,22 +4,21 @@ import gradientString from 'gradient-string';
 
 export type Formatter = (str: string) => void;
 
-let LONGEST_PREFIX = 20;
-export function outputFormatter(title: string): Formatter {
-  const prettify = chooseColor();
-
+let LONGEST_PREFIX = 24;
+export function outputFormatter(title: string, colorizer: gradientString.Gradient = chooseColor()): Formatter {
   if (title.length > LONGEST_PREFIX) {
     LONGEST_PREFIX = title.length;
   }
 
-  const prefix = prettify(title.padEnd(LONGEST_PREFIX, ' '));
+  const prefix = colorizer(title.padEnd(LONGEST_PREFIX, ' '));
 
   return (msg: string): void => {
-    const formattedMessage = msg.split('\n').map((line) => {
+    const formattedMessage = msg.trimEnd().split('\n').map((line) => {
       process.stdout.write(`${prefix} | ${line.trimEnd()}\n`);
     });
   };
 }
+
 
 const colorNames = [
   'aliceblue',
@@ -220,7 +219,7 @@ const ALL_COLORS = [
 ];
 
 let COLOR_IDX = 0;
-function chooseColor() {
+export function chooseColor() {
   const colorChoice = ALL_COLORS[COLOR_IDX];
   COLOR_IDX = (COLOR_IDX + 1) % ALL_COLORS.length;
 

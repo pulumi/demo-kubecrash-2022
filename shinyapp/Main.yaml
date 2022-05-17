@@ -4,12 +4,14 @@ configuration:
     secret: true
   serviceNodePort:
     type: Number
+    default: 0
   serviceType:
     type: String
+    default: LoadBalancer
   imageName:
     default: docker.io/afriel/demo-img:latest
 variables:
-  appLabels: # just a map, must not be mutated
+  appLabels:
     app: shiny-demo
 resources:
   k8sProvider:
