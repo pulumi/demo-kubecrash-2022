@@ -30,6 +30,10 @@ async function main() {
         formatter: outputFormatter(`cluster   ${clusterDefinition.name}`, theme)
       });
 
+      if (!cluster) {
+        return;
+      }
+
       runPulumiProject({
         dir: './shinyapp',
         project: 'shinyapp',
